@@ -1,6 +1,6 @@
 # TQL
-### Table query language.
-### v0.1.1
-A query language and client for data manipulation in  .csv file format. Uses a syntax adapted and similar to SQL.
+### Table query language
+## v0.2.0 Dev
 
-Currently it is very basic and under heavy devlopment.
+A SQL like query language to manipulate and manage data in .csv format.
+Currently under heavy devlopment.
