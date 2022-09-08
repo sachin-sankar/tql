@@ -1,54 +1,74 @@
+import errors as error
+import defaults as default
+
 global csv, filename
 csv = []
-filename = ['unloaded']
+filename = ['[unloaded]']
 
 def load(name):
 	try:
 		with open(f'{name}.csv','r') as file:
-			filename[0] = name
-			data = file.read()
-			list = data.split('\n')
-			column = list.pop(0).split(',')
-			data = []
-			for i in list:
-				data.append(i.split(','))
-			csv.append(column)
-			csv.append(data)
-			print(f'[S200] : Loaded {name}')
+			filename[0] = f'{name}.csv'
+			rows = file.read().split('\n')
+			columnData = rows.pop(0).split(',')
+			fileData = []
+			for row in rows:
+				fileData.append(row.split(','))
+			csv.append(columnData)
+			csv.append(fileData)
+			print(f'Loaded file "{name}.csv"')
 	except FileNotFoundError:
-		print(f'[E404] : No such file {name}')
+		error.fileNotFound(name)
 
-def parse(com):
-	com = com.split()
-	if com[0] == 'load':
-		try:
-			load(com[1])
-		except IndexError:
-			print('[E400] Incomplete query')
-	elif com[0] == 'in':
-		columns = com[1].split(',')
-		if com[2] == 'select':
-			data = []
-			if com[3] == '*':
-				 for column in columns:
-				 	index = csv[0].index(column)
-				 	columnData = []
-				 	for row in csv[1]:
-				 		columnData.append(row[index])
-				 	data.append(columnData)
-		if len(columns) > 1:
-			newdata = []
-			for index in range(len(data[0])):
-				buffer = []
-				for column in data:
-					buffer.append(column[index])
-				newdata.append(buffer)
-		for row in newdata:
-			print(row)
-	else:
-		print(f'[E402] Unknown command "{com[0]}"')
+def parse(queryString):
+	# Query formatting 
+	queryParams = queryString.strip().split()
+	queryMethod = queryParams.pop(0)
+	
+	# Query Validation
+	if queryMethod not in default.MethodsMap.keys():
+		error.methodNotFound(queryMethod)
+		return
+	if len(queryParams) != default.MethodsMap[queryMethod]:
+		error.missingParam()
+		return
+	
+	#Query Processing
+	# Load
+	if queryMethod == 'load':
+		load(queryParams[0])
+	
+	#In
+	elif queryMethod == 'in':
+		columns = queryParams[0].split(',')
+		operation = queryParams[1]
+		condition = queryParams[2]
+		# Query Parameter Validation
+		for column in columns:
+			if column not in csv[0]:
+				error.columnError()
+				return
+		if operation not in default.ValidInOperations:
+			error.inOperation(operation)
 		
-		
+		# Select * condition
+		if condition == '*':
+			 columnDataSets = []
+			 for column in columns:
+			 	index = csv[0].index(column)
+			 	columnDataSet = []
+			 	for row in csv[1]:
+			 		columnDataSet.append(row[index])
+			 	columnDataSets.append(columnDataSet)
+			 queryResult = []
+			 for i in range(len(columnDataSets[0])):
+			 	row = []
+			 	for column in columnDataSets:
+			 		row.append(column[i])
+			 	queryResult.append(row)
+			 
+			 print(queryResult)
+			 
 def client():
 	while True:
 		parse(input('\n'+filename[0]+'/>'))
