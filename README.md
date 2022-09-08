@@ -1,2 +1,0 @@
-# tql
-Table query language 
