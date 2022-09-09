@@ -1,9 +1,15 @@
+from rich import print
+from prettytable import PrettyTable as Table
 import errors as error
 import defaults as default
+
+from rich.pretty import pprint
 
 global csv, filename
 csv = []
 filename = ['[unloaded]']
+cache = ['','']
+
 
 def load(name):
 	try:
@@ -17,6 +23,7 @@ def load(name):
 			csv.append(columnData)
 			csv.append(fileData)
 			print(f'Loaded file "{name}.csv"')
+			print(f'Dataset has {len(columnData)} columns and {len(fileData)} rows.')
 	except FileNotFoundError:
 		error.fileNotFound(name)
 
@@ -24,20 +31,18 @@ def parse(queryString):
 	# Query formatting 
 	queryParams = queryString.strip().split()
 	queryMethod = queryParams.pop(0)
-	
 	# Query Validation
 	if queryMethod not in default.MethodsMap.keys():
 		error.methodNotFound(queryMethod)
 		return
 	if len(queryParams) != default.MethodsMap[queryMethod]:
-		error.missingParam()
+		error.missingParams()
 		return
 	
 	#Query Processing
 	# Load
 	if queryMethod == 'load':
 		load(queryParams[0])
-	
 	#In
 	elif queryMethod == 'in':
 		columns = queryParams[0].split(',')
@@ -50,25 +55,45 @@ def parse(queryString):
 				return
 		if operation not in default.ValidInOperations:
 			error.inOperation(operation)
-		
 		# Select * condition
 		if condition == '*':
-			 columnDataSets = []
+			 dataSet = []
 			 for column in columns:
 			 	index = csv[0].index(column)
 			 	columnDataSet = []
 			 	for row in csv[1]:
 			 		columnDataSet.append(row[index])
-			 	columnDataSets.append(columnDataSet)
+			 	dataSet.append(columnDataSet)
 			 queryResult = []
-			 for i in range(len(columnDataSets[0])):
+			 for i in range(len(dataSet[0])):
 			 	row = []
-			 	for column in columnDataSets:
+			 	for column in dataSet:
 			 		row.append(column[i])
 			 	queryResult.append(row)
-			 
-			 print(queryResult)
-			 
+			 cache[0] = columns
+			 cache[1] = queryResult
+			 tableOut()
+	#save
+	if queryMethod == 'save':
+		raw = cache[1]
+		raw.insert(0,cache[0])
+		try:
+			file = open(queryParams[0]+'.csv','w')
+			file.write('')
+		except:
+			pass
+		file = open(queryParams[0]+'.csv','a')
+		for line in raw:
+			file.write(str(line).lstrip('[').rstrip(']').replace("'",'')+ '\n')
+		print(f'Saved recent query output to file named "{queryParams[0]}.csv".')
+
+def tableOut():
+	table = Table()
+	table.field_names = cache[0]
+	for row in cache[1]:
+		table.add_row(row)
+	print(table)
+
 def client():
 	while True:
 		parse(input('\n'+filename[0]+'/>'))

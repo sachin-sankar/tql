@@ -1,10 +1,11 @@
+import rich
+	
 def error():
-	print('Error occured during query execution')
-	print('Error details: ')
+	rich.print('[red]Error occured during execution:')
 
 def fileNotFound(fileName):
 	error()
-	print(f'File name "{fileName} not found."')
+	print(f'[FileNotFound] : File with name "{fileName}.csv" not found.')
 
 def methodNotFound(method):
 	error()
@@ -20,4 +21,4 @@ def columnError():
 	
 def inOperation(operation):
 	error()
-	print(f'[Invalid Operation] Operation "{operation}" is invalid in use with "in" method')
+	print(f'[Invalid Operation] : Operation "{operation}" is invalid in use with "in" method')
