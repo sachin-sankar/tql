@@ -6,7 +6,7 @@ import defaults as default
 from rich.pretty import pprint
 
 global csv, filename
-csv = []
+csv = ['','']
 filename = ['[unloaded]']
 cache = ['','']
 
@@ -20,8 +20,12 @@ def load(name):
 			fileData = []
 			for row in rows:
 				fileData.append(row.split(','))
-			csv.append(columnData)
-			csv.append(fileData)
+			for columnName in columnData:
+				columnData[columnData.index(columnName)] = columnName.strip().replace(' ','_')
+			csv[0] = columnData
+			if fileData[-1] == ['']:
+				fileData.pop()
+			csv[1] = fileData
 			print(f'Loaded file "{name}.csv"')
 			print(f'Dataset has {len(columnData)} columns and {len(fileData)} rows.')
 	except FileNotFoundError:
@@ -86,6 +90,15 @@ def parse(queryString):
 		for line in raw:
 			file.write(str(line).lstrip('[').rstrip(']').replace("'",'')+ '\n')
 		print(f'Saved recent query output to file named "{queryParams[0]}.csv".')
+		
+	#show
+	if queryMethod == 'show':
+		if queryParams[0] == 'table':
+			columns = str(csv[0]).lstrip('[').rstrip(']').replace("'",'').replace(' ','')
+			parse(f'in {columns} select *')
+		elif queryParams[0] == 'columns':
+			print(f'Columns in loaded file "{filename}"')
+			print(csv[0])
 
 def tableOut():
 	table = Table()
@@ -94,8 +107,13 @@ def tableOut():
 		table.add_row(row)
 	print(table)
 
+def fromScript(script):
+	queries = script.split(';')
+	for query in queries:
+		parse(query.strip())
+
 def client():
 	while True:
 		parse(input('\n'+filename[0]+'/>'))
-
+		
 client()
