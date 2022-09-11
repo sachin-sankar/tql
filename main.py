@@ -51,32 +51,76 @@ def parse(queryString):
 	elif queryMethod == 'in':
 		columns = queryParams[0].split(',')
 		operation = queryParams[1]
-		condition = queryParams[2]
+		conditions = queryParams[2].split(',')
+		if conditions[0] != '*':
+			conditions.insert(0,'*')
 		# Query Parameter Validation
 		for column in columns:
 			if column not in csv[0]:
 				error.columnError()
 				return
+		cache[0] = columns
 		if operation not in default.ValidInOperations:
 			error.inOperation(operation)
-		# Select * condition
-		if condition == '*':
-			 dataSet = []
-			 for column in columns:
-			 	index = csv[0].index(column)
-			 	columnDataSet = []
-			 	for row in csv[1]:
-			 		columnDataSet.append(row[index])
-			 	dataSet.append(columnDataSet)
-			 queryResult = []
-			 for i in range(len(dataSet[0])):
-			 	row = []
-			 	for column in dataSet:
-			 		row.append(column[i])
-			 	queryResult.append(row)
-			 cache[0] = columns
-			 cache[1] = queryResult
-			 tableOut()
+			return
+		for condition in conditions:
+			# * condition
+			if condition == '*':
+				 dataSet = []
+				 for column in columns:
+				 	index = csv[0].index(column)
+				 	columnDataSet = []
+				 	for row in csv[1]:
+				 		columnDataSet.append(row[index])
+				 	dataSet.append(columnDataSet)
+				 queryResult = []
+				 for i in range(len(dataSet[0])):
+				 	row = []
+				 	for column in dataSet:
+				 		row.append(column[i])
+				 	queryResult.append(row)
+				 cache[1] = queryResult
+			# <> Condition
+			for conditionOps in ['>','<','#','=','%','_']:
+				if conditionOps in condition:
+					conditionData = condition.split(conditionOps)
+					conditionColumn = conditionData[0]
+					conditionValue = conditionData[1]
+					index = cache[0].index(conditionColumn)
+					resultSet = []
+					if conditionOps== '>':
+						for row in cache[1]:
+							if int(row[index]) > int(conditionValue):
+								resultSet.append(row)
+					elif conditionOps == '<' :
+						for row in cache[1]:
+							if int(row[index]) < int(conditionValue):
+								resultSet.append(row)
+					elif conditionOps == '=':
+						for row in cache[1]:
+							if int(row[index]) == int(conditionValue):
+								resultSet.append(row)
+					elif conditionOps == '%':
+						for row in cache[1]:
+							if row[index].strip().startswith(str(conditionValue.strip())):
+								resultSet.append(row)
+					elif conditionOps== '_':
+						for row in cache[1]:
+							if row[index].strip().endswith(conditionValue.strip()):
+								resultSet.append(row)
+					else:
+						for row in cache[1]:
+							if int(row[index]) != int(conditionValue):
+								resultSet.append(row)
+					
+					cache[1] = resultSet
+			else:
+				pass
+		# Query operations
+		if operation == 'select':
+			tableOut()
+		if operation == 'count':
+			print(f'{len(cache[1])} records')
 	#save
 	if queryMethod == 'save':
 		raw = cache[1]
@@ -117,3 +161,7 @@ def client():
 		parse(input('\n'+filename[0]+'/>'))
 		
 client()
+fromScript('''
+load orgy;
+in Rank,Country select Country_o,Country%M
+''')
